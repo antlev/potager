@@ -1,0 +1,116 @@
+/*
+    Antoine LEVY - Clémentine Thornary
+	game-project - server.c
+	Version 1.0 - 20/03/2018
+*/
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <assert.h>
+#include "utils/list.h"
+
+typedef struct Connection {
+	int socket_fd;
+	int client_sock;
+	struct sockaddr_in client;
+	struct sockaddr_in server;
+	int nb_connections_max;
+	List* connections_list;
+} Connection;
+
+/* ------------------- Prototypes ------------------- */
+int prepareConnection(Connection* connection);
+int acceptIncomingConnections(Connection* connection);
+
+int main(int argc, char** argv){
+
+	Connection server_connection;
+
+	if ( prepareConnection(&server_connection) == 0){
+		acceptIncomingConnections(&server_connection);
+	}
+    
+	return 0;
+
+}
+
+int prepareConnection(Connection* connection){
+	
+	connection->socket_fd = socket(AF_INET , SOCK_STREAM , 0);
+	connection->nb_connections_max = 20;
+
+	if(connection->socket_fd == -1){
+		printf("Can't create socket\n");
+	}
+	printf("socket created : %d\n",connection->socket_fd );
+
+	connection->server.sin_family = AF_INET;
+	connection->server.sin_addr.s_addr = INADDR_ANY;
+    connection->server.sin_port = htons( 1664 );
+
+    if( bind(connection->socket_fd,(struct sockaddr *)&connection->server , sizeof(connection->server)) < 0)
+    {
+        perror("bind failed");
+        return 1;
+    }
+    printf("bind done\n");
+
+    listen(connection->socket_fd , connection->nb_connections_max);
+
+    return 0;
+}
+
+int acceptIncomingConnections(Connection* connection){
+   	int i, c, read_size, maxfd=connection->nb_connections_max, accept_return, selectReturn;
+	char client_message[2048];
+
+	connection->connections_list = malloc(sizeof(List));
+	list_init(connection->connections_list);
+
+	fd_set rdfs;
+
+    c = sizeof(struct sockaddr_in);
+    
+    while(1){
+		FD_ZERO(&rdfs);
+		FD_SET(connection->socket_fd, &rdfs);	
+	    for(i=0;i<list_size(connection->connections_list);i++){
+			FD_SET(list_get(connection->connections_list, i), &rdfs);
+		}
+	    printf("Waiting for incoming connections... or messages....\n");
+	    selectReturn = select(maxfd, &rdfs, NULL, NULL, NULL);
+	    printf("selectReturn=%d\n",selectReturn );
+    	if (selectReturn > 0){
+		    if( FD_ISSET(connection->socket_fd, &rdfs)){
+	   		    if ((accept_return = accept(connection->socket_fd, (struct sockaddr *) &(connection->client), (socklen_t*) &c)) >= 0){
+				    list_append(connection->connections_list, accept_return);
+			   		printf("Connection accepted\n" );
+		    	}else{
+		        	printf("accept failed");
+		    	}	
+			}
+		    for(i=0;i<list_size(connection->connections_list);i++){
+		    	if(FD_ISSET(list_get(connection->connections_list, i), &rdfs)){
+				    if( (read_size = read(list_get(connection->connections_list, i) , client_message , 2048)) > 0 )
+				    {
+				    	printf("Received message : %s from connection number %d connection_fd = %d\n",client_message, i+1, list_get(connection->connections_list, i) );
+				        write(list_get(connection->connections_list, i) , client_message , read_size);
+    				}else{
+    					printf("Connection (connection_fd=%d) closed by remote user\n", list_get(connection->connections_list, i));
+    					list_delete(connection->connections_list, list_get(connection->connections_list, i));
+    				}
+		    	}
+		    }
+	    }
+		sleep(1);
+    }
+    return 0;
+}
+
+
+
+
+
