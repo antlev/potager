@@ -1,31 +1,21 @@
 /*
     Antoine LEVY - Clémentine Thornary
-	game-project - server.c
-	Version 1.0 - 20/03/2018
+	garden-project - gardenServer.c
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <assert.h>
+#include <string.h>
 #include "utils/list.h"
-
-typedef struct Connection {
-	int socket_fd;
-	int client_sock;
-	struct sockaddr_in client;
-	struct sockaddr_in server;
-	int nb_connections_max;
-	List* connections_list;
-} Connection;
-
-/* ------------------- Prototypes ------------------- */
-int prepareConnection(Connection* connection);
-int acceptIncomingConnections(Connection* connection);
-
-int main(int argc, char** argv){
+#include "gardenServer.h"
+#include "garden.h"
+#include "utils/tools.h"
+int gardenServer(){
 
 	Connection server_connection;
 
@@ -66,6 +56,7 @@ int prepareConnection(Connection* connection){
 int acceptIncomingConnections(Connection* connection){
    	int i, c, read_size, maxfd=connection->nb_connections_max, accept_return, selectReturn;
 	char client_message[2048];
+	char response[2048];
 
 	connection->connections_list = malloc(sizeof(List));
 	list_init(connection->connections_list);
@@ -97,7 +88,10 @@ int acceptIncomingConnections(Connection* connection){
 				    if( (read_size = read(list_get(connection->connections_list, i) , client_message , 2048)) > 0 )
 				    {
 				    	printf("Received message : %s from connection number %d connection_fd = %d\n",client_message, i+1, list_get(connection->connections_list, i) );
-				        write(list_get(connection->connections_list, i) , client_message , read_size);
+				        printf("Require garden status\n");
+				        float gardenStatus = getHumidity();
+				        ftoa(gardenStatus, response, 4);
+				        write(list_get(connection->connections_list, i) , response , read_size);
     				}else{
     					printf("Connection (connection_fd=%d) closed by remote user\n", list_get(connection->connections_list, i));
     					list_delete(connection->connections_list, list_get(connection->connections_list, i));
@@ -109,8 +103,3 @@ int acceptIncomingConnections(Connection* connection){
     }
     return 0;
 }
-
-
-
-
-
