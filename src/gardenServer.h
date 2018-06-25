@@ -6,6 +6,7 @@
 #define GARDEN_SERVER_H
 #include "utils/list.h"
 #include <arpa/inet.h>
+#include "garden.h"
 
 typedef struct Connection {
 	int socket_fd;
@@ -18,6 +19,6 @@ typedef struct Connection {
 
 /* ------------------- Prototypes ------------------- */
 int prepareConnection(Connection* connection);
-int acceptIncomingConnections(Connection* connection);
-int gardenServer();
+int acceptIncomingConnections(Connection* connection, GardenStatus* gardenStatus);
+int gardenServer(GardenStatus* gardenStatus);
 #endif // GARDEN_SERVER_H

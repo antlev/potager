@@ -3,8 +3,8 @@
 	garden-project - garden.c
 */
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -13,102 +13,110 @@
 // #include <sys/types.h> 
 // #include <sys/wait.h>
 
-
-int HUMIDITY_WAIT=10000000; // Minimum time between each tap opening in us
-int OPEN_TAP_TIME=1; // Time while the tap is open in sec
-int MIN_HUMIDITY=100;
-char * PARAMETERS="HUMIDITY_WAIT OPEN_TAP_TIME MIN_HUMIDITY";
-// char* CONF_FILE_PATH = "/etc/garden/garden.conf"
-char* CONF_FILE_PATH="garden.conf";
-
-float humidity=50;
-short tapStatus=0;
-unsigned long last_tap_open; // timestamp of the last time the tap was open
-
 void main(){
+	GardenStatus gardenStatus;
 
-	if (init() == -1){
+	if (init(&gardenStatus) == -1){
 		exit(-1);
 	}
-
 	pthread_t thread_id;
-	pthread_mutex_t humidity_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	pthread_create(&thread_id, NULL, (void*) *monitorGarden, &humidity_mutex);
+	pthread_create(&thread_id, NULL, (void*) *monitorGarden, &gardenStatus);
 
-	gardenServer();
+	gardenServer(&gardenStatus);
 }
-int init(){
-    FILE *confFile;
-    char * line = NULL;
-    size_t len = 0;
-    ssize_t read;
+int init(GardenStatus* gardenStatus){
+	srand(time(NULL));   // should only be called once
+
+    // Default settings
+	gardenStatus->config_humidityWait=10000000; // 10 sec
+	gardenStatus->config_openTapTime=1; // 1 sec
+	gardenStatus->config_minHumidity=100;
+	// Insert a possibility to pass a configuration file
+    // FILE *confFile;
+    // char * line = NULL;
+    // size_t len = 0;
+    // ssize_t read;
     // confFile = fopen (CONF_FILE_PATH,"r");
     // if (confFile == NULL){
     //     return -1;
     // }
-    if(isTapOpen){
-    	closeTap();
-    }
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
 	unsigned long currentTime = 1000000 * tv.tv_sec + tv.tv_usec;
-    last_tap_open = currentTime-HUMIDITY_WAIT;
+
+
+	gardenStatus->humidity_mutex = &(pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+	gardenStatus->humidity = 10;
+	getHumidity(gardenStatus);
+	gardenStatus->tapStatus = getTapStatus(gardenStatus);
+	gardenStatus->last_tap_open = currentTime-(gardenStatus->config_humidityWait);
+    if(getTapStatus){
+    	closeTap(gardenStatus);
+    }
     return 0;
 }
 void isParameter(char* parameterName){
-	char* parameters = PARAMETERS;
+	char* parameters;
 	strtok(parameters," ");
 	if (parameters == parameterName){		
 	}
 }
-void monitorGarden(pthread_mutex_t humidity_mutex){
+void monitorGarden(GardenStatus* gardenStatus){
 	while(1){
-		monitorHumidity(humidity_mutex);
+		monitorHumidity(gardenStatus);
 		sleep(3);
 	}
 }
-int monitorHumidity(){
+int monitorHumidity(GardenStatus* gardenStatus){
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
 	unsigned long currentTime = 1000000 * tv.tv_sec + tv.tv_usec;
-	printf("currentTime is :%lu\n",currentTime );
-	printf("lto + humidity :%lu\n",last_tap_open + HUMIDITY_WAIT );
- 	printf("diff=%lu \n",currentTime-(last_tap_open + HUMIDITY_WAIT) );
- 
-	getHumidity();
 
-	if (last_tap_open + HUMIDITY_WAIT  > currentTime ){
+	printf("currentTime is :%lu\n",currentTime );
+	printf("lto + humidity :%lu\n",gardenStatus->last_tap_open + gardenStatus->config_humidityWait );
+ 	printf("diff=%lu \n",currentTime-(gardenStatus->last_tap_open + gardenStatus->config_humidityWait) );
+ 
+	getHumidity(gardenStatus);
+
+	if (gardenStatus->last_tap_open + gardenStatus->config_humidityWait  > currentTime ){
 		printf("Tap has been open just now\n");
 		return 0;
 	}
-	if ( humidity < MIN_HUMIDITY ){
-		increaseHumidity();
+	if ( gardenStatus->humidity < gardenStatus->config_minHumidity ){
+		increaseHumidity(gardenStatus);
 		return 1;
 	}
 }
-float getHumidity(){
-	printf("Arduino returns humidity of %f\n",humidity);
-	return humidity;
+void getHumidity(GardenStatus* gardenStatus){
+	pthread_mutex_lock(gardenStatus->humidity_mutex);
+	printf("Arduino returns humidity of %f\n",gardenStatus->humidity);
+	// Wait for arduino value -> we decrease the humidity
+	gardenStatus->humidity=gardenStatus->humidity - rand()%4;
+	pthread_mutex_unlock(gardenStatus->humidity_mutex);
 }
-void increaseHumidity(){
-	openTap();
-	sleep(OPEN_TAP_TIME);
-	humidity+=10;
-	closeTap();
+void increaseHumidity(GardenStatus* gardenStatus){
+	openTap(gardenStatus);
+	sleep(gardenStatus->config_openTapTime);
+	pthread_mutex_lock(gardenStatus->humidity_mutex);
+	gardenStatus->humidity+=10; // 
+	pthread_mutex_unlock(gardenStatus->humidity_mutex);
+	closeTap(gardenStatus);
 }
-void openTap(){
+void openTap(GardenStatus* gardenStatus){
 	// arduino openTap
 	printf("The tap is opening\n");
+	gardenStatus->tapStatus = 1;
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
-	last_tap_open=1000000 * tv.tv_sec + tv.tv_usec;
+	gardenStatus->last_tap_open=1000000 * tv.tv_sec + tv.tv_usec;
 }
-void closeTap(){
+void closeTap(GardenStatus* gardenStatus){
 	// arduino closeTap
+	gardenStatus->tapStatus = 0;
 	printf("The tap is closing\n");
 }
-short isTapOpen(){
+short getTapStatus(GardenStatus* gardenStatus){
 	// arduino tapStatus
-	return tapStatus;
+	return gardenStatus->tapStatus;
 }

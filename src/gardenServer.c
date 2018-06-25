@@ -15,12 +15,12 @@
 #include "gardenServer.h"
 #include "garden.h"
 #include "utils/tools.h"
-int gardenServer(){
+int gardenServer(GardenStatus* gardenStatus){
 
 	Connection server_connection;
 
 	if ( prepareConnection(&server_connection) == 0){
-		acceptIncomingConnections(&server_connection);
+		acceptIncomingConnections(&server_connection, gardenStatus);
 	}
     
 	return 0;
@@ -53,7 +53,7 @@ int prepareConnection(Connection* connection){
     return 0;
 }
 
-int acceptIncomingConnections(Connection* connection){
+int acceptIncomingConnections(Connection* connection, GardenStatus* gardenStatus){
    	int i, c, read_size, maxfd=connection->nb_connections_max, accept_return, selectReturn;
 	char client_message[2048];
 	char response[2048];
@@ -89,8 +89,8 @@ int acceptIncomingConnections(Connection* connection){
 				    {
 				    	printf("Received message : %s from connection number %d connection_fd = %d\n",client_message, i+1, list_get(connection->connections_list, i) );
 				        printf("Require garden status\n");
-				        float gardenStatus = getHumidity();
-				        ftoa(gardenStatus, response, 4);
+				        getHumidity(gardenStatus);
+				        ftoa(gardenStatus->humidity, response, 4);
 				        write(list_get(connection->connections_list, i) , response , read_size);
     				}else{
     					printf("Connection (connection_fd=%d) closed by remote user\n", list_get(connection->connections_list, i));
