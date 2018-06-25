@@ -12,6 +12,7 @@
 #include "gardenServer.h"
 // #include <sys/types.h> 
 // #include <sys/wait.h>
+pthread_mutex_t* humidity_mutex;
 
 void main(){
 	GardenStatus gardenStatus;
@@ -46,7 +47,7 @@ int init(GardenStatus* gardenStatus){
 	unsigned long currentTime = 1000000 * tv.tv_sec + tv.tv_usec;
 
 
-	gardenStatus->humidity_mutex = &(pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+	humidity_mutex = &(pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 	gardenStatus->humidity = 10;
 	getHumidity(gardenStatus);
 	gardenStatus->tapStatus = getTapStatus(gardenStatus);
@@ -89,18 +90,18 @@ int monitorHumidity(GardenStatus* gardenStatus){
 	}
 }
 void getHumidity(GardenStatus* gardenStatus){
-	pthread_mutex_lock(gardenStatus->humidity_mutex);
+	pthread_mutex_lock(humidity_mutex);
 	printf("Arduino returns humidity of %f\n",gardenStatus->humidity);
 	// Wait for arduino value -> we decrease the humidity
 	gardenStatus->humidity=gardenStatus->humidity - rand()%4;
-	pthread_mutex_unlock(gardenStatus->humidity_mutex);
+	pthread_mutex_unlock(humidity_mutex);
 }
 void increaseHumidity(GardenStatus* gardenStatus){
 	openTap(gardenStatus);
 	sleep(gardenStatus->config_openTapTime);
-	pthread_mutex_lock(gardenStatus->humidity_mutex);
+	pthread_mutex_lock(humidity_mutex);
 	gardenStatus->humidity+=10; // 
-	pthread_mutex_unlock(gardenStatus->humidity_mutex);
+	pthread_mutex_unlock(humidity_mutex);
 	closeTap(gardenStatus);
 }
 void openTap(GardenStatus* gardenStatus){
