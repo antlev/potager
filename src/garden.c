@@ -27,41 +27,50 @@ void main(){
 	gardenServer(&gardenStatus);
 }
 int init(GardenStatus* gardenStatus){
-	srand(time(NULL));   // should only be called once
-
-    // Default settings
-	gardenStatus->config_humidityWait=10000000; // 10 sec
-	gardenStatus->config_openTapTime=1; // 1 sec
-	gardenStatus->config_minHumidity=100;
-	// Insert a possibility to pass a configuration file
-    // FILE *confFile;
-    // char * line = NULL;
-    // size_t len = 0;
-    // ssize_t read;
-    // confFile = fopen (CONF_FILE_PATH,"r");
-    // if (confFile == NULL){
-    //     return -1;
-    // }
+	srand(time(NULL));
+	setConfFile(gardenStatus);
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
 	unsigned long currentTime = 1000000 * tv.tv_sec + tv.tv_usec;
-
-
 	humidity_mutex = &(pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 	gardenStatus->humidity = 10;
 	getHumidity(gardenStatus);
 	gardenStatus->tapStatus = getTapStatus(gardenStatus);
-	gardenStatus->last_tap_open = currentTime-(gardenStatus->config_humidityWait);
+	gardenStatus->lastTapOpen = currentTime-(gardenStatus->config_humidityWait);
     if(getTapStatus){
     	closeTap(gardenStatus);
     }
     return 0;
 }
-void isParameter(char* parameterName){
-	char* parameters;
-	strtok(parameters," ");
-	if (parameters == parameterName){		
-	}
+void setConfFile(GardenStatus* gardenStatus){
+	FILE *confFile;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    confFile = fopen (CONF_FILE_PATH,"r");
+    if (confFile == NULL){
+        printf("No configuration file found : setting to default value\n");
+        gardenStatus->config_humidityWait=10000000; // 10 sec
+    	gardenStatus->config_openTapTime=1; // 1 sec
+		gardenStatus->config_minHumidity=100;
+        break;
+    }
+	char* parameterValue 
+	// READ FILE LINI BY LINE
+    if(line[0] != "#"){
+    	if(strCompare(line, "HUMIDITY_WAIT")){
+			parameterValue = strtok(line," ");
+    		gardenStatus->config_humidityWait = strToInt(parameterValue);
+    	}
+    	if(strCompare(line, "OPEN_TAP_TIME")){
+			parameterValue = strtok(line," ");
+    		gardenStatus->config_openTapTime = strToInt(parameterValue);
+    	}
+    	if(strCompare(line, "MIN_HUMIDITY")){
+			parameterValue = strtok(line," ");
+    		gardenStatus->config_minHumidity = strToInt(parameterValue);
+    	}
+    }
 }
 void monitorGarden(GardenStatus* gardenStatus){
 	while(1){
@@ -75,12 +84,12 @@ int monitorHumidity(GardenStatus* gardenStatus){
 	unsigned long currentTime = 1000000 * tv.tv_sec + tv.tv_usec;
 
 	printf("currentTime is :%lu\n",currentTime );
-	printf("lto + humidity :%lu\n",gardenStatus->last_tap_open + gardenStatus->config_humidityWait );
- 	printf("diff=%lu \n",currentTime-(gardenStatus->last_tap_open + gardenStatus->config_humidityWait) );
+	printf("lto + humidity :%lu\n",gardenStatus->lastTapOpen + gardenStatus->config_humidityWait );
+ 	printf("diff=%lu \n",currentTime-(gardenStatus->lastTapOpen + gardenStatus->config_humidityWait) );
  
 	getHumidity(gardenStatus);
 
-	if (gardenStatus->last_tap_open + gardenStatus->config_humidityWait  > currentTime ){
+	if (gardenStatus->lastTapOpen + gardenStatus->config_humidityWait  > currentTime ){
 		printf("Tap has been open just now\n");
 		return 0;
 	}
@@ -110,7 +119,7 @@ void openTap(GardenStatus* gardenStatus){
 	gardenStatus->tapStatus = 1;
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
-	gardenStatus->last_tap_open=1000000 * tv.tv_sec + tv.tv_usec;
+	gardenStatus->lastTapOpen=1000000 * tv.tv_sec + tv.tv_usec;
 }
 void closeTap(GardenStatus* gardenStatus){
 	// arduino closeTap

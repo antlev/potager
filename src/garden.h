@@ -10,12 +10,11 @@ typedef struct GardenStatus {
 	int config_minHumidity;
 	float humidity;
 	short tapStatus;
-	unsigned long last_tap_open; // timestamp of the last time the tap was open
-	pthread_mutex_t* humidity_mutex;
+	unsigned long lastTapOpen; // timestamp of the last time the tap was open
 } GardenStatus;
 int init(GardenStatus* gardenStatus);
+void setConfFile(GardenStatus* gardenStatus);
 void updateParameter(char* parameter, size_t len);	
-void isParameter(char* parameterName);
 void monitorGarden();
 int monitorHumidity();
 void increaseHumidity(GardenStatus* gardenStatus);
