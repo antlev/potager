@@ -1,5 +1,5 @@
 /*
-    Antoine LEVY - Clémentine Thornary
+    Alexandre GARCIA - Antoine LEVY - Clémentine Thornary
 	garden-project - garden.c
 */
 #include <stdio.h>
@@ -10,11 +10,14 @@
 #include <pthread.h>
 #include "garden.h"
 #include "gardenServer.h"
+#include <fcntl.h>
+#include <unistd.h>
 // #include <sys/types.h> 
 // #include <sys/wait.h>
 pthread_mutex_t* humidity_mutex;
+pthread_mutex_t* temperature_mutex;
 
-void main(){
+int main(){
 	GardenStatus gardenStatus;
 
 	if (init(&gardenStatus) == -1){
@@ -22,9 +25,12 @@ void main(){
 	}
 	pthread_t thread_id;
 
-	pthread_create(&thread_id, NULL, (void*) *monitorGarden, &gardenStatus);
+	pthread_create(&thread_id, NULL, (void*) *gardenServer, &gardenStatus);
 
-	gardenServer(&gardenStatus);
+	monitorGarden(&gardenStatus);
+	close(gardenStatus.serialfd);
+
+	return 0;
 }
 int init(GardenStatus* gardenStatus){
 	srand(time(NULL));   // should only be called once
@@ -45,26 +51,37 @@ int init(GardenStatus* gardenStatus){
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
 	unsigned long currentTime = 1000000 * tv.tv_sec + tv.tv_usec;
-
-
 	humidity_mutex = &(pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-	gardenStatus->humidity = 10;
-	getHumidity(gardenStatus);
+	
+	gardenStatus->serialfd = open("/dev/ttyACM0", O_RDONLY | O_NOCTTY | O_NDELAY);
+    if (gardenStatus->serialfd == -1)
+        perror("Error opening the serial port");
+        return 0;
+
+	if(readValueFromArduino(gardenStatus)){
+		getHumidity(gardenStatus);
+	} else{
+		printf("could not read value from arduino...");
+		gardenStatus->humidity = -1;
+		gardenStatus->arduinoData[0] = "";
+	}
+	
 	gardenStatus->tapStatus = getTapStatus(gardenStatus);
 	gardenStatus->last_tap_open = currentTime-(gardenStatus->config_humidityWait);
-    if(getTapStatus){
+    if(getTapStatus(gardenStatus)){
     	closeTap(gardenStatus);
     }
     return 0;
 }
 void isParameter(char* parameterName){
-	char* parameters;
+	/*char* parameters;
 	strtok(parameters," ");
 	if (parameters == parameterName){		
-	}
+	}*/
 }
 void monitorGarden(GardenStatus* gardenStatus){
 	while(1){
+		printf("Arduino message : %s\n", gardenStatus->arduinoData);
 		monitorHumidity(gardenStatus);
 		sleep(3);
 	}
@@ -74,11 +91,11 @@ int monitorHumidity(GardenStatus* gardenStatus){
 	gettimeofday(&tv,NULL);
 	unsigned long currentTime = 1000000 * tv.tv_sec + tv.tv_usec;
 
-	printf("currentTime is :%lu\n",currentTime );
-	printf("lto + humidity :%lu\n",gardenStatus->last_tap_open + gardenStatus->config_humidityWait );
- 	printf("diff=%lu \n",currentTime-(gardenStatus->last_tap_open + gardenStatus->config_humidityWait) );
- 
-	getHumidity(gardenStatus);
+	if(readValueFromArduino(gardenStatus)){
+		getHumidity(gardenStatus);
+	}else{
+		printf("could not update value from arduino...");
+	}
 
 	if (gardenStatus->last_tap_open + gardenStatus->config_humidityWait  > currentTime ){
 		printf("Tap has been open just now\n");
@@ -88,13 +105,23 @@ int monitorHumidity(GardenStatus* gardenStatus){
 		increaseHumidity(gardenStatus);
 		return 1;
 	}
+	return 0;
 }
 void getHumidity(GardenStatus* gardenStatus){
+	// Get value from arduino data
 	pthread_mutex_lock(humidity_mutex);
-	printf("Arduino returns humidity of %f\n",gardenStatus->humidity);
-	// Wait for arduino value -> we decrease the humidity
-	gardenStatus->humidity=gardenStatus->humidity - rand()%4;
+	// Set humidity value
 	pthread_mutex_unlock(humidity_mutex);
+}
+int readValueFromArduino(GardenStatus* gardenStatus){
+    fcntl(gardenStatus->serialfd, F_SETFL, 0);
+    read(gardenStatus->serialfd, gardenStatus->arduinoData, 512);
+	return 1;	
+}
+void getTemperature(GardenStatus* gardenStatus){
+	pthread_mutex_lock(temperature_mutex);
+	printf("Arduino returns humidity of %f\n",gardenStatus->humidity);
+	pthread_mutex_unlock(temperature_mutex);
 }
 void increaseHumidity(GardenStatus* gardenStatus){
 	openTap(gardenStatus);
