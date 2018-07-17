@@ -1,5 +1,5 @@
 /*
-    Antoine LEVY - Clémentine Thornary
+    Alexandre GARCIA - Antoine LEVY - Clémentine Thornary
 	garden-project - gardenServer.c
 */
 #include <stdio.h>

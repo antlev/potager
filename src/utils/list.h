@@ -1,5 +1,5 @@
 /*
-    Antoine LEVY - Clémentine Thornary
+    Alexandre GARCIA - Antoine LEVY - Clémentine Thornary
 	game-project - utils/list.h
 */
 #ifndef LIST_H

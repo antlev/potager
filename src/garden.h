@@ -1,6 +1,6 @@
 /*
-    Antoine LEVY - Clémentine Thornary
-	garden-project - garden.c
+    Alexandre GARCIA - Antoine LEVY - Clémentine Thornary
+	garden-project - garden.h
 */
 #ifndef GARDEN_H
 #define GARDEN_H

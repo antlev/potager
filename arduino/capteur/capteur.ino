@@ -1,3 +1,7 @@
+/*
+    Alexandre GARCIA - Antoine LEVY - Clémentine Thornary
+    garden-project - arduino_src
+*/
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
