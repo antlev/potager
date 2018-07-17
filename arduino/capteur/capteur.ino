@@ -11,11 +11,11 @@ void loop() {
   float temperature = raw_value * (5.0 / 1023.0 * 100.0);
 
 //  Serial.print("raw-val " + raw_value + " temperature " + temperature);
-  Serial.print("raw_value ");
+  Serial.print("# raw_value ");
   Serial.print(raw_value);
   Serial.print(" temperature ");
   Serial.print(temperature);
-  Serial.print("\n");
+  Serial.print(" #");
   delay(2500);
 
 }
