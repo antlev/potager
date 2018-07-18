@@ -1,6 +1,6 @@
 /*
-    Antoine LEVY - Clémentine Thornary
-    game-project - client.h
+    Alexandre GARCIA - Antoine LEVY - Clémentine Thornary
+    garden-project - client.h
 */
 #ifndef CLIENT_H
 #define CLIENT_H

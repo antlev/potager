@@ -1,6 +1,6 @@
 /*
-    Antoine LEVY - Clémentine Thornary
-    game-project - client.c
+    Alexandre GARCIA - Antoine LEVY - Clémentine Thornary
+    garden-project - client.c
     Version 1.0 - 20/03/2018
 */
 #include <stdio.h>
