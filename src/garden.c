@@ -160,11 +160,10 @@ void getTemperature(GardenStatus* gardenStatus){
 		}
 	}
 	if (start != -1 && end != -1 && start < end) {
-		int length_temperature = end - start - 4;
+		int length_temperature = end - start;
 		char str_temp[length_temperature];
-		for (int i = 0; i < length_temperature; ++i)
-		{
-			str_temp[i] = gardenStatus->arduinoData[start + i + 2];
+		for (int i = 0; i < length_temperature; ++i){
+			str_temp[i] = gardenStatus->arduinoData[start + i + 1];
 		}
 		temperature = atoi(str_temp);
 	}
