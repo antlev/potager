@@ -11,6 +11,7 @@ typedef struct GardenStatus {
 	char arduinoData[512];
 	int serialfd;
 	float humidity;
+	float temperature;
 	short tapStatus;
 	unsigned long lastTapOpen; // timestamp of the last time the tap was open
 } GardenStatus;
@@ -24,5 +25,6 @@ void openTap(GardenStatus* gardenStatus);
 void closeTap(GardenStatus* gardenStatus);
 short getTapStatus(GardenStatus* gardenStatus);
 void getHumidity(GardenStatus* gardenStatus);
+void getTemperature(GardenStatus* gardenStatus);
 int readValueFromArduino(GardenStatus* gardenStatus);
 #endif // GARDEN_H
