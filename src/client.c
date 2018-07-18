@@ -29,6 +29,7 @@ void initConnection(Connection* connection){
     
     if(connection->socket_fd == -1){
         printf("Can't create socket\n");
+        exit(-1);
     }
     printf("socket created : %d\n",connection->socket_fd );
 
@@ -40,10 +41,16 @@ void initConnection(Connection* connection){
     if (connect(connection->socket_fd , (struct sockaddr *)&connection->server , sizeof(connection->server)) < 0)
     {
         perror("connect failed. Error");
+        exit(-1);
     }         
     printf("Connected\n");
 }
+
 void gardenStatus(Connection* connection){
+    int choixMenu;
+
+    printf("___________________________________________________\n");
+    printf("%40s","|             Mon potager connecté !              |\n");
     char* message = "status_request";
     char server_message[2048];
     int read_size;
@@ -54,10 +61,34 @@ void gardenStatus(Connection* connection){
         printf("read failed\n");
     }
      
-    printf("Server reply : humidity status is \n");
+    printf("| Taux d'humidité :                     ");
     for (int i = 0; i < read_size; ++i)
     {
         printf("%c", server_message[i]);
     }
+    //printf(" |");
     printf("\n");
+    printf("| Tempréature :                       ");
+    /*for (int i = 0; i < read_size; ++i)
+    {
+        printf("%c", server_message[i]);
+    }*/
+    printf("            |");
+    printf("\n");
+    printf("|_________________________________________________|\n");
+    printf("|             Menu de configuration               |\n");
+    printf("| 1. Configuration taux d'humidité                |\n");
+    printf("| 2. Configuration débit d'eau                    |\n");
+    printf("|_________________________________________________|\n");
+    printf("\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    /*scanf("%d", &choixMenu);
+    switch (choixMenu)
+    {
+        case 1:
+            printf("Alex est trop beau\n");
+            break;
+        case 2:
+            printf("Alex est trop intelligent\n");
+            break;
+    }*/
 }
