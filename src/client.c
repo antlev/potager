@@ -59,16 +59,16 @@ void gardenStatus(Connection* connection){
     if( (read_size = read(connection->socket_fd , server_message , 2048 )) < 0){
         printf("read failed\n");
     }    
-    for (int i = 0; i < read_size; ++i)
-    {
-        printf("%c", server_message[i]);
-    }
+    // for (int i = 0; i < read_size; ++i)
+    // {
+    //     printf("%c", server_message[i]);
+    // }
     connection->temperature = setHumidity(server_message);
     Home(connection->temperature);
 }
 
 int setHumidity(char * message){
-    return 0;
+    return atoi(message);
 }
 
 
