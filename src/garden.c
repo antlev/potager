@@ -109,6 +109,29 @@ int monitorHumidity(GardenStatus* gardenStatus){
 }
 void getHumidity(GardenStatus* gardenStatus){
 	// Get value from arduino data
+	char* raw_val_arduino = readValueFromArduino();
+	int raw_length = strlen(raw_val_arduino);
+	int start, end = -1;
+	int length_temperature, temperature;
+	for (int i = 0; i < raw_length; ++i)
+	{
+		if (raw_val_arduino[i] == '#')
+		{
+			start = i;
+		} else if (raw_val_arduino[i] == '*')
+		{
+			end = i;
+		}
+	}
+	if (start != -1 && end != -1 && start < end) {
+		int length_temperature = end - start - 4;
+		char* str_temp[length_temperature];
+		for (int i = 0; i < length_temperature; ++i)
+		{
+			str_temp[i] = raw_val_arduino[start + i + 2];
+		}
+		temperature = atoi(str_temp);
+	}
 	pthread_mutex_lock(humidity_mutex);
 	// Set humidity value
 	pthread_mutex_unlock(humidity_mutex);
