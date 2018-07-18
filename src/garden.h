@@ -24,7 +24,7 @@ void increaseHumidity(GardenStatus* gardenStatus);
 void openTap(GardenStatus* gardenStatus);
 void closeTap(GardenStatus* gardenStatus);
 short getTapStatus(GardenStatus* gardenStatus);
-void getHumidity(GardenStatus* gardenStatus);
+void setHumidity(GardenStatus* gardenStatus);
 void getTemperature(GardenStatus* gardenStatus);
 int readValueFromArduino(GardenStatus* gardenStatus);
 #endif // GARDEN_H

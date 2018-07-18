@@ -12,5 +12,5 @@ typedef struct Connection {
 int main(int argc , char *argv[]);
 void gardenStatus(Connection* connection);
 void initConnection(Connection* connection);
-int setHumidity(char * message);
+int getHumidity(char * message);
 #endif // CLIENT_H

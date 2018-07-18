@@ -12,8 +12,6 @@
 #include "gardenServer.h"
 #include <fcntl.h>
 #include <unistd.h>
-// #include <sys/types.h> 
-// #include <sys/wait.h>
 pthread_mutex_t* humidity_mutex;
 pthread_mutex_t* temperature_mutex;
 char* CONF_FILE_PATH;
@@ -23,13 +21,14 @@ int main(){
 	if (init(&gardenStatus) == -1){
 		exit(-1);
 	}
-	pthread_t thread_id;
+	pthread_t thread_id[2];
+	pthread_create(&thread_id[0], NULL, (void*) *gardenServer, &gardenStatus);
+	pthread_create(&thread_id[1], NULL, (void*) *monitorGarden, &gardenStatus);
 
-	pthread_create(&thread_id, NULL, (void*) *gardenServer, &gardenStatus);
 
-	monitorGarden(&gardenStatus);
+	pthread_join(thread_id[0], NULL);
+	pthread_join(thread_id[1], NULL);
 	close(gardenStatus.serialfd);
-
 	return 0;
 }
 int init(GardenStatus* gardenStatus){
@@ -42,13 +41,13 @@ int init(GardenStatus* gardenStatus){
 	
 	gardenStatus->serialfd = open("/dev/ttyACM0", O_RDONLY | O_NOCTTY | O_NDELAY);
     if (gardenStatus->serialfd == -1)
-        perror("Error opening the serial port");
+        perror("Garden >Error opening the serial port");
         return 0;
 
 	if(readValueFromArduino(gardenStatus)){
-		getHumidity(gardenStatus);
+		setHumidity(gardenStatus);
 	} else{
-		printf("could not read value from arduino...");
+		printf("Garden >Could not read value from arduino...");
 		gardenStatus->humidity = -1;
 		gardenStatus->temperature = -1;
 		gardenStatus->arduinoData[0] = ' ';
@@ -68,7 +67,7 @@ void setConfFile(GardenStatus* gardenStatus){
     ssize_t read;
     confFile = fopen (CONF_FILE_PATH,"r");
     if (confFile == NULL){
-        printf("No configuration file found : setting to default value\n");
+        printf("Garden >No configuration file found : setting to default value\n");
         gardenStatus->config_humidityWait=10000000; // 10 sec
     	gardenStatus->config_openTapTime=1; // 1 sec
 		gardenStatus->config_minHumidity=100;
@@ -92,23 +91,23 @@ void setConfFile(GardenStatus* gardenStatus){
 }
 void monitorGarden(GardenStatus* gardenStatus){
 	while(1){
-		printf("Arduino message : %s\n", gardenStatus->arduinoData);
+		printf("Garden >Arduino message : %s\n", gardenStatus->arduinoData);
 		monitorHumidity(gardenStatus);
 		sleep(3);
 	}
 }
 int monitorHumidity(GardenStatus* gardenStatus){
-	printf("toto\n");
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
 	unsigned long currentTime = 1000000 * tv.tv_sec + tv.tv_usec;
 	if(readValueFromArduino(gardenStatus)){
-		getHumidity(gardenStatus);
+		setHumidity(gardenStatus);
+		printf("Garden >ArduinoData has been updated...");
 	}else{
-		printf("could not update value from arduino...");
+		printf("Garden >Could not update value from arduino...");
 	}
 	if (gardenStatus->lastTapOpen + gardenStatus->config_humidityWait  > currentTime ){
-		printf("Tap has been open just now\n");
+		printf("Garden >Tap has been open just now\n");
 		return 0;
 	}
 	if ( gardenStatus->humidity < gardenStatus->config_minHumidity ){
@@ -117,9 +116,9 @@ int monitorHumidity(GardenStatus* gardenStatus){
 	}
 	return 0;
 }
-void getHumidity(GardenStatus* gardenStatus){
+void setHumidity(GardenStatus* gardenStatus){
 	// Get value from arduino data
-	pthread_mutex_lock(humidity_mutex);
+	printf("Garden >setHumidity called\n");
 	// Get value from arduino data
 	int raw_length = strlen(gardenStatus->arduinoData);
 	int start, end = -1;
@@ -134,15 +133,13 @@ void getHumidity(GardenStatus* gardenStatus){
 	if (start != -1 && end != -1 && start < end) {
 		length_humidity = end - start - 4;
 		char str_temp[length_humidity];
-		for (int i = 0; i < length_humidity; ++i)
-		{
+		for (int i = 0; i < length_humidity; ++i){
 			str_temp[i] = gardenStatus->arduinoData[start + i + 2];
 		}
 		humidity = atoi(str_temp);
 	}
+	pthread_mutex_lock(humidity_mutex);
 	gardenStatus->humidity = humidity;
-
-	// Set humidity value
 	pthread_mutex_unlock(humidity_mutex);
 }
 void getTemperature(GardenStatus* gardenStatus){
@@ -175,6 +172,7 @@ void getTemperature(GardenStatus* gardenStatus){
 int readValueFromArduino(GardenStatus* gardenStatus){
     fcntl(gardenStatus->serialfd, F_SETFL, 0);
     read(gardenStatus->serialfd, gardenStatus->arduinoData, 512);
+	printf("Garden >Arduino value updated\n");
 	return 1;	
 }
 void increaseHumidity(GardenStatus* gardenStatus){
@@ -187,7 +185,7 @@ void increaseHumidity(GardenStatus* gardenStatus){
 }
 void openTap(GardenStatus* gardenStatus){
 	// arduino openTap
-	printf("The tap is opening\n");
+	printf("Garden >The tap is opening\n");
 	gardenStatus->tapStatus = 1;
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
@@ -196,7 +194,7 @@ void openTap(GardenStatus* gardenStatus){
 void closeTap(GardenStatus* gardenStatus){
 	// arduino closeTap
 	gardenStatus->tapStatus = 0;
-	printf("The tap is closing\n");
+	printf("Garden >The tap is closing\n");
 }
 short getTapStatus(GardenStatus* gardenStatus){
 	// arduino tapStatus

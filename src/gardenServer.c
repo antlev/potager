@@ -33,9 +33,9 @@ int prepareConnection(Connection* connection){
 	connection->nb_connections_max = 20;
 
 	if(connection->socket_fd == -1){
-		printf("Can't create socket\n");
+		printf("GardenServer >Can't create socket\n");
 	}
-	printf("socket created : %d\n",connection->socket_fd );
+	printf("GardenServer >socket created : %d\n",connection->socket_fd );
 
 	connection->server.sin_family = AF_INET;
 	connection->server.sin_addr.s_addr = INADDR_ANY;
@@ -45,7 +45,7 @@ int prepareConnection(Connection* connection){
         perror("bind failed");
         return 1;
     }
-    printf("bind done\n");
+    printf("GardenServer >bind done\n");
 
     listen(connection->socket_fd , connection->nb_connections_max);
 
@@ -70,29 +70,27 @@ int acceptIncomingConnections(Connection* connection, GardenStatus* gardenStatus
 	    for(i=0;i<list_size(connection->connections_list);i++){
 			FD_SET(list_get(connection->connections_list, i), &rdfs);
 		}
-	    printf("Waiting for incoming connections... or messages....\n");
+	    printf("GardenServer >Waiting for incoming connections... or messages....\n");
 	    selectReturn = select(maxfd, &rdfs, NULL, NULL, NULL);
-	    printf("selectReturn=%d\n",selectReturn );
     	if (selectReturn > 0){
 		    if( FD_ISSET(connection->socket_fd, &rdfs)){
 	   		    if ((accept_return = accept(connection->socket_fd, (struct sockaddr *) &(connection->client), (socklen_t*) &c)) >= 0){
 				    list_append(connection->connections_list, accept_return);
-			   		printf("Connection accepted\n" );
+			   		printf("GardenServer >Connection accepted\n" );
 		    	}else{
-		        	printf("accept failed");
+		        	printf("GardenServer >Accept failed");
 		    	}	
 			}
 		    for(i=0;i<list_size(connection->connections_list);i++){
 		    	if(FD_ISSET(list_get(connection->connections_list, i), &rdfs)){
 				    if( (read_size = read(list_get(connection->connections_list, i) , client_message , 2048)) > 0 )
 				    {
-				    	printf("Received message : %s from connection number %d connection_fd = %d\n",client_message, i+1, list_get(connection->connections_list, i) );
-				        printf("Require garden status\n");
-				        getHumidity(gardenStatus);
+				    	printf("GardenServer >Received message : %s from connection number %d connection_fd = %d\n",client_message, i+1, list_get(connection->connections_list, i) );
 				        ftoa(gardenStatus->humidity, response, 4);
+				        printf("GardenServer >Send back >%s<\n", response);
 				        write(list_get(connection->connections_list, i) , response , read_size);
     				}else{
-    					printf("Connection (connection_fd=%d) closed by remote user\n", list_get(connection->connections_list, i));
+    					printf("GardenServer >Connection (connection_fd=%d) closed by remote user\n", list_get(connection->connections_list, i));
     					list_delete(connection->connections_list, list_get(connection->connections_list, i));
     				}
 		    	}
