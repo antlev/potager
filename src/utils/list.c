@@ -1,7 +1,6 @@
 /*
-    Antoine LEVY - Clémentine Thornary
+    Alexandre GARCIA - Antoine LEVY - Clémentine Thornary
 	game-project - utils/list.c
-	Version 1.0 - 20/03/2018
 	Simple linkelist, that can contains integer.
 */
 #include <stdlib.h>

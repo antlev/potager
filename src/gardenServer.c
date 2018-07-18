@@ -1,5 +1,5 @@
 /*
-    Antoine LEVY - Clémentine Thornary
+    Alexandre GARCIA - Antoine LEVY - Clémentine Thornary
 	garden-project - gardenServer.c
 */
 #include <stdio.h>
@@ -41,8 +41,7 @@ int prepareConnection(Connection* connection){
 	connection->server.sin_addr.s_addr = INADDR_ANY;
     connection->server.sin_port = htons( 1664 );
 
-    if( bind(connection->socket_fd,(struct sockaddr *)&connection->server , sizeof(connection->server)) < 0)
-    {
+    if( bind(connection->socket_fd,(struct sockaddr *)&connection->server , sizeof(connection->server)) < 0){
         perror("bind failed");
         return 1;
     }
