@@ -4,11 +4,13 @@
     Version 1.0 - 20/03/2018
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include "client.h"
+#include "menu.h"
 
 int main(int argc , char *argv[]){
     Connection connection;
@@ -16,7 +18,6 @@ int main(int argc , char *argv[]){
 
     while(1){
         gardenStatus(&connection);
-        sleep(5);
     }
     close(connection.socket_fd);
     return 0;
@@ -41,7 +42,7 @@ void initConnection(Connection* connection){
     if (connect(connection->socket_fd , (struct sockaddr *)&connection->server , sizeof(connection->server)) < 0)
     {
         perror("connect failed. Error");
-        exit(-1);
+        // exit(-1);
     }         
     printf("Connected\n");
 }
@@ -49,8 +50,6 @@ void initConnection(Connection* connection){
 void gardenStatus(Connection* connection){
     int choixMenu;
 
-    printf("___________________________________________________\n");
-    printf("%40s","|             Mon potager connecté !              |\n");
     char* message = "status_request";
     char server_message[2048];
     int read_size;
@@ -59,36 +58,17 @@ void gardenStatus(Connection* connection){
     }
     if( (read_size = read(connection->socket_fd , server_message , 2048 )) < 0){
         printf("read failed\n");
-    }
-     
-    printf("| Taux d'humidité :                     ");
+    }    
     for (int i = 0; i < read_size; ++i)
     {
         printf("%c", server_message[i]);
     }
-    //printf(" |");
-    printf("\n");
-    printf("| Tempréature :                       ");
-    /*for (int i = 0; i < read_size; ++i)
-    {
-        printf("%c", server_message[i]);
-    }*/
-    printf("            |");
-    printf("\n");
-    printf("|_________________________________________________|\n");
-    printf("|             Menu de configuration               |\n");
-    printf("| 1. Configuration taux d'humidité                |\n");
-    printf("| 2. Configuration débit d'eau                    |\n");
-    printf("|_________________________________________________|\n");
-    printf("\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    /*scanf("%d", &choixMenu);
-    switch (choixMenu)
-    {
-        case 1:
-            printf("Alex est trop beau\n");
-            break;
-        case 2:
-            printf("Alex est trop intelligent\n");
-            break;
-    }*/
+    connection->temperature = setHumidity(server_message);
+    Home(connection->temperature);
 }
+
+int setHumidity(char * message){
+    return 0;
+}
+
+

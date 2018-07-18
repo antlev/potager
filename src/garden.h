@@ -8,7 +8,7 @@ typedef struct GardenStatus {
 	int config_humidityWait; // Minimum time between each tap opening in us
 	int config_openTapTime; // Time while the tap is open in sec
 	int config_minHumidity;
-	char* arduinoData[512];
+	char arduinoData[512];
 	int serialfd;
 	float humidity;
 	short tapStatus;

@@ -16,7 +16,7 @@
 // #include <sys/wait.h>
 pthread_mutex_t* humidity_mutex;
 pthread_mutex_t* temperature_mutex;
-
+char* CONF_FILE_PATH;
 int main(){
 	GardenStatus gardenStatus;
 
@@ -50,11 +50,11 @@ int init(GardenStatus* gardenStatus){
 	} else{
 		printf("could not read value from arduino...");
 		gardenStatus->humidity = -1;
-		gardenStatus->arduinoData[0] = "";
+		gardenStatus->arduinoData[0] = ' ';
 	}
 	
 	gardenStatus->tapStatus = getTapStatus(gardenStatus);
-	gardenStatus->last_tap_open = currentTime-(gardenStatus->config_humidityWait);
+	gardenStatus->lastTapOpen = currentTime-(gardenStatus->config_humidityWait);
     if(getTapStatus(gardenStatus)){
     	closeTap(gardenStatus);
     }
@@ -71,24 +71,24 @@ void setConfFile(GardenStatus* gardenStatus){
         gardenStatus->config_humidityWait=10000000; // 10 sec
     	gardenStatus->config_openTapTime=1; // 1 sec
 		gardenStatus->config_minHumidity=100;
-        break;
     }
-	char* parameterValue 
-	// READ FILE LINI BY LINE
-    if(line[0] != "#"){
-    	if(strCompare(line, "HUMIDITY_WAIT")){
-			parameterValue = strtok(line," ");
-    		gardenStatus->config_humidityWait = strToInt(parameterValue);
-    	}
-    	if(strCompare(line, "OPEN_TAP_TIME")){
-			parameterValue = strtok(line," ");
-    		gardenStatus->config_openTapTime = strToInt(parameterValue);
-    	}
-    	if(strCompare(line, "MIN_HUMIDITY")){
-			parameterValue = strtok(line," ");
-    		gardenStatus->config_minHumidity = strToInt(parameterValue);
-    	}
-    }
+	// char* parameterValue;
+	// // READ FILE LINI BY LINE
+ //    if(line[0] != '#'){
+ //    	if(strCompare(line, "HUMIDITY_WAIT")){
+	// 		parameterValue = strtok(line," ");
+ //    		gardenStatus->config_humidityWait = strToInt(parameterValue);
+ //    	}
+ //    	if(strCompare(line, "OPEN_TAP_TIME")){
+	// 		parameterValue = strtok(line," ");
+ //    		gardenStatus->config_openTapTime = strToInt(parameterValue);
+ //    	}
+ //    	if(strCompare(line, "MIN_HUMIDITY")){
+	// 		parameterValue = strtok(line," ");
+ //    		gardenStatus->config_minHumidity = strToInt(parameterValue);
+ //    	}
+ //    }
+}
 void monitorGarden(GardenStatus* gardenStatus){
 	while(1){
 		printf("Arduino message : %s\n", gardenStatus->arduinoData);
